@@ -96,6 +96,7 @@ dist
 
 # SAM Files
 samconfig.toml
+.aws-sam/*
 
 # FuseBox cache
 .fusebox/

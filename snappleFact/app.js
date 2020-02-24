@@ -3,6 +3,14 @@
 let response;
 const fetch = require("node-fetch");
 
+const SLACK_RESPONSE_URL_KEY = "response_url";
+const FACT_API = {
+  BASE_URL: "https://uselessfacts.jsph.pl",
+  ENDPOINTS: {
+    RANDOM: "random.json?language=en"
+  }
+};
+
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -17,25 +25,12 @@ const fetch = require("node-fetch");
  */
 
 const getRandomFact = async () => {
-  const factUrl = "https://uselessfacts.jsph.pl/random.json?language=en";
+  const factUrl = `${FACT_API.BASE_URL}/${FACT_API.ENDPOINTS.RANDOM}`;
     return await fetch(factUrl).then(apiResponse => {
       return apiResponse.json().then(json => {
         return json.text;
       });          
     });
-};
-
-const acknowledgeRequest = slack_url => {
-  fetch(
-    slack_url,
-    {
-      headers: {
-        "Content-Type": "application/json"
-      },
-      method: "POST",
-      statusCode: 200
-    }
-  );
 };
 
 const sendFactViaSlack = (fact, slack_url) => {
@@ -47,7 +42,7 @@ const sendFactViaSlack = (fact, slack_url) => {
       },
       method: "POST",
       body: JSON.stringify({
-        response_type: "ephemeral",
+        response_type: "in_channel",
         text: fact
       })
     }
@@ -62,12 +57,11 @@ exports.randomFact = async (event, context, callback) => {
         throw new Error("No response_url")
       }
 
-      const slackResponseUrl = urlParams.get("response_url");
+      const slackResponseUrl = urlParams.get(SLACK_RESPONSE_URL_KEY);
       
       //acknowledgeRequest(slackResponseUrl);
 
       let randomFact = await getRandomFact();
-      console.debug(randomFact);
       sendFactViaSlack(randomFact, slackResponseUrl);
 
       response = {
