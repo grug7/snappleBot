@@ -3,7 +3,10 @@
 let response;
 const fetch = require("node-fetch");
 
-const SLACK_RESPONSE_URL_KEY = "response_url";
+const SLACK_REQUEST_KEYS = {
+  RESPONSE_URL: "response_url",
+  USER_ID: "user_id"
+}
 const FACT_API = {
   BASE_URL: "https://uselessfacts.jsph.pl",
   ENDPOINTS: {
@@ -53,16 +56,27 @@ exports.randomFact = async (event, context, callback) => {
     try {
       const urlParams = new URLSearchParams(event.body);
 
-      if (!urlParams.has("response_url")) {
+      if (!urlParams.has(SLACK_REQUEST_KEYS.RESPONSE_URL)) {
         throw new Error("No response_url")
       }
-
-      const slackResponseUrl = urlParams.get(SLACK_RESPONSE_URL_KEY);
       
+      let replyUser;
+      if (urlParams.has(SLACK_REQUEST_KEYS.USER_ID)) {
+        replyUser = urlParams.get(SLACK_REQUEST_KEYS.USER_ID);
+      }
+
+      const slackResponseUrl = urlParams.get(SLACK_REQUEST_KEYS.RESPONSE_URL);
+
       //acknowledgeRequest(slackResponseUrl);
 
       let randomFact = await getRandomFact();
-      sendFactViaSlack(randomFact, slackResponseUrl);
+      let replyMessage = "";
+
+      if (replyUser) {
+        replyMessage = `Hey <@${replyUser}>. Here's your fact!\n>`;
+      }
+      replyMessage += randomFact;
+      sendFactViaSlack(replyMessage, slackResponseUrl);
 
       response = {
         "statusCode": 200,
